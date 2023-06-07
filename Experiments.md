@@ -6,16 +6,16 @@
 - Taken in Pittsburgh
 
 
-| Sequence | Num Frames | Misc|
+| Sequence | Num Frames | Num Cameras|
 | ----------- | ----------- | ----------- |
-| Craig1 | 3674 | |
-| Craig2 | 3474 | |
+| Craig1 | 3674 | 10 |
+| Craig2 | 3474 |  |
 | Fifth1 | 1294 | |
 | Fifth2 | 2312 | |
-| Morewood1 | | |
-| Morewood2 | | |
-| Butler1 | | |
+| Morewood1 | 6721 | |
+| Morewood2 | 7205 | |
+| Butler1 | 1180 | |
 | Butler2 | | |
-| Penn1 | | |
-| Penn2 | | |
+| Penn1 | 9128| |
+| Penn2 | 8583 | |
 
