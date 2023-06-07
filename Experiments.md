@@ -5,6 +5,7 @@
 - 18 moving cameras at multiple locations of traffic scenes
 - Taken in Pittsburgh
 
+---
 
 | Sequence | Num Frames | Num Cameras|Misc |
 | ----------- | ----------- | ----------- |  ----------- |
@@ -19,3 +20,4 @@
 | Penn1 | 9128| 8 ||
 | Penn2 | 8583 | 10||
 
+---
