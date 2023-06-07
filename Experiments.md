@@ -9,10 +9,10 @@
 | Sequence | Num Frames | Num Cameras|
 | ----------- | ----------- | ----------- |
 | Craig1 | 3674 | 10 |
-| Craig2 | 3474 |  |
-| Fifth1 | 1294 | |
-| Fifth2 | 2312 | |
-| Morewood1 | 6721 | |
+| Craig2 | 3474 | 10 |
+| Fifth1 | 1294 | 8 |
+| Fifth2 | 2312 | 10 |
+| Morewood1 | 6721 | 9 |
 | Morewood2 | 7205 | |
 | Butler1 | 1180 | |
 | Butler2 | | |
