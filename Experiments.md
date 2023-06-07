@@ -8,13 +8,14 @@
 
 | Sequence | Num Frames | Misc|
 | ----------- | ----------- | ----------- |
-| Craig1 | 3674 | | |
-| Craig2 | 3474 | | |
-| Fifth1 | 1294 | | |
-| Fifth2 | 2312 | | |
-| Morewood1 | | | |
-| Morewood2 | | | |
-| Butler1 | | | |
-| Butler2 | | | |
-| Penn1 | | | |
-| Penn2 | | | |
+| Craig1 | 3674 | |
+| Craig2 | 3474 | |
+| Fifth1 | 1294 | |
+| Fifth2 | 2312 | |
+| Morewood1 | | |
+| Morewood2 | | |
+| Butler1 | | |
+| Butler2 | | |
+| Penn1 | | |
+| Penn2 | | |
+
