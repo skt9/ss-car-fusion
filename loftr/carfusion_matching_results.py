@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 from glob import glob
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 desired_img_dim = (1024, 512)
 scaling_factor = 2.
 seq_names = ['car_craig1',      #   car_butler2 is missing.
@@ -103,7 +105,7 @@ def get_default_configuration():
     _default_cfg['coarse']['temp_bug_fix'] = True  # set to False when using the old ckpt
     matcher = LoFTR(config=_default_cfg)
     matcher.load_state_dict(torch.load("weights/outdoor_ds.ckpt")['state_dict'])
-    matcher = matcher.eval()#.cuda()
+    matcher = matcher.eval().to(device)
     return matcher
 
 def def_value():
@@ -164,9 +166,6 @@ class CarFusionDataset:
 def separate_camera_sequences(seq_dict):
     
     cam_dict = defaultdict()
-    # print(seq_dict.keys())
-
-    # print(f"len(seqdict[rgb]): {len(seq_dict['rgb'])}")
     for rgb in seq_dict['rgb']:
         dir_part, file_part = os.path.split(rgb)
         file_base, file_ext = file_part.split('.')
@@ -177,107 +176,73 @@ def separate_camera_sequences(seq_dict):
         cam_dict[cam_id].append(rgb)
     
     return cam_dict
+
+def process_sequence(seq_dataset):
+    
+    rgbs = seq_dataset['rgb']
+    first_images = rgbs[0:len(rgbs)-1]
+    second_images = rgbs[1:len(rgbs)]
+    cam_dict = separate_camera_sequences(seq_dataset)
+            
+    seq_dir = os.path.join(args.dataset_path, seq)
+    seq_results_dir = os.path.join(seq_dir, 'matched_results')
+    if not os.path.exists(seq_results_dir):
+        os.mkdir(seq_results_dir)
+
+    for ky in cam_dict.keys():
+        cam_img_paths = cam_dict[ky]
+        first_imgs = cam_img_paths[0:len(cam_img_paths)-1]
+        second_imgs = cam_img_paths[1:len(cam_img_paths)]
         
+        for i, (img0_file, img1_file) in enumerate(zip(first_images, second_images)):
+            
+            img0_raw = read_image(first_images[i], desired_img_dim)
+            img1_raw = read_image(second_images[i], desired_img_dim)
+        
+            img0 = expand_to_torch4d(img0_raw)
+            img1 = expand_to_torch4d(img1_raw)
+            batch = {'image0': img0, 'image1': img1}
+
+            with torch.no_grad():
+                matcher(batch)
+                mkpts0 = batch['mkpts0_f'].cpu().numpy()
+                mkpts1 = batch['mkpts1_f'].cpu().numpy()
+                mconf = batch['mconf'].cpu().numpy()
+        
+            color = cm.jet(mconf)
+            text = [
+                'LoFTR',
+                'Matches: {}'.format(len(mkpts0)),
+            ]
+
+            fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
+            
+            seq_dir = os.path.join(args.dataset_path, seq)
+            seq_results_dir = os.path.join(seq_dir, 'matched_results')
+            if not os.path.exists(seq_results_dir):
+                os.mkdir(seq_results_dir)
+            
+            img1_base = os.path.split(first_images[i])[1].split('.')[0]
+            img2_base = os.path.split(second_images[i])[1].split('.')[0]
+            
+            color = cm.jet(mconf)
+            text = [
+                'LoFTR',
+                'Matches: {}'.format(len(mkpts0)),
+            ]
+            
+            fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
+            matching_filename = img1_base + "_to_" + img2_base + ".jpg"  
+            fig.savefig(os.path.join(seq_results_dir, matching_filename))
+    
 
 if __name__ == "__main__":
     
     matcher = get_default_configuration()
     
     args = parse_args()
-    # print(args)
-    
-    # load_carfusion_dataset(args)
     dataset = CarFusionDataset(args)
-    print(dataset)
     
     for i,seq in enumerate(seq_names):
         seq_dataset = dataset.get_sequence(seq)
-        rgbs = seq_dataset['rgb']
-        first_images = rgbs[0:len(rgbs)-1]
-        second_images = rgbs[1:len(rgbs)]
-        cam_dict = separate_camera_sequences(seq_dataset)
-                
-        seq_dir = os.path.join(args.dataset_path, seq)
-        seq_results_dir = os.path.join(seq_dir, 'matched_results')
-        if not os.path.exists(seq_results_dir):
-            os.mkdir(seq_results_dir)
-
-        #   
-        for ky in cam_dict.keys():
-            cam_img_paths = cam_dict[ky]
-            first_imgs = cam_img_paths[0:len(cam_img_paths)-1]
-            second_imgs = cam_img_paths[1:len(cam_img_paths)]
-            
-            for i, (img0_file, img1_file) in enumerate(zip(first_images, second_images)):
-                
-                img0_raw = read_image(first_images[i], desired_img_dim)
-                img1_raw = read_image(second_images[i], desired_img_dim)
-            
-                img0 = expand_to_torch4d(img0_raw)
-                img1 = expand_to_torch4d(img1_raw)
-                batch = {'image0': img0, 'image1': img1}
-
-                with torch.no_grad():
-                    matcher(batch)
-                    mkpts0 = batch['mkpts0_f'].cpu().numpy()
-                    mkpts1 = batch['mkpts1_f'].cpu().numpy()
-                    mconf = batch['mconf'].cpu().numpy()
-            
-                color = cm.jet(mconf)
-                text = [
-                    'LoFTR',
-                    'Matches: {}'.format(len(mkpts0)),
-                ]
-            
-                fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
-                
-            
-                # print(f"dataset_path: {args.dataset_path}")
-                seq_dir = os.path.join(args.dataset_path, seq)
-                seq_results_dir = os.path.join(seq_dir, 'matched_results')
-                if not os.path.exists(seq_results_dir):
-                    os.mkdir(seq_results_dir)
-                
-                img1_base = os.path.split(first_images[i])[1].split('.')[0]
-                img2_base = os.path.split(second_images[i])[1].split('.')[0]
-                
-                color = cm.jet(mconf)
-                text = [
-                    'LoFTR',
-                    'Matches: {}'.format(len(mkpts0)),
-                ]
-                
-                fig = make_matching_figure(img0_raw, img1_raw, mkpts0, mkpts1, color, text=text)
-                matching_filename = img1_base + "_to_" + img2_base + ".jpg"
-                fig.savefig(os.path.join(seq_results_dir, matching_filename))
-                # print(f"matching_filename: {matching_filename}")
-                # input()
-                
-            # print(f"seq_results_dir: {seq_results_dir}")
-            
-            # os.path_
-            # input()
-            
-        # if os.path.exists()
-        
-        # fig.show()
-        # fig.savefig()
-        
-        
-        
-        # make_matching_figure
-        # tiled_img = make_tiled_image(img0_raw, img1_raw)
-        # cv2.imshow("win", tiled_img)
-        # cv2.waitKey(0)
-        
-        # input()
-        
-        # input()
-        # print(f"i: {i}")
-        # if (i==2)
-        # print(f"len(dataset[{seq}]['rgb']): {len(seq_dataset['rgb'])}", end = ' ')
-        # print(f"len(dataset[{seq}]['bb']): {len(seq_dataset['bb'])}", end = ' ')
-        # print(f"len(dataset[{seq}]['gt']): {len(seq_dataset['gt'])}")
-
-    
-    # for ky in dataset.get_sequence
+        process_sequence(seq_dataset)
